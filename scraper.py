@@ -1,11 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
 MONTHS = {
-    "Jan":1,"Feb":2,"Mar":3,"Apr":4,"May":5,"Jun":6,
-    "Jul":7,"Aug":8,"Sep":9,"Oct":10,"Nov":11,"Dec":12
+    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+    "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
 }
+
+BASE_URL = "https://truckersmp.com"
+EVENTS_PAGE = "/vtc/64218/events/attending"
 
 def parse_date(date_str):
     # Example: "Fri, Oct 10, 2025 21:30"
@@ -17,13 +21,14 @@ def parse_date(date_str):
     return datetime(year, month, day, hour, minute)
 
 def scrape_events():
-    base_url = "https://truckersmp.com/vtc/64218/events/attending"
     events = []
-    next_url = base_url
+    current_url = urljoin(BASE_URL, EVENTS_PAGE)
 
-    while next_url:
-        html = requests.get(next_url).text
-        soup = BeautifulSoup(html, "html.parser")
+    while current_url:
+        print(f"Fetching: {current_url}")
+        response = requests.get(current_url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
         cards = soup.select("div.h-100.bg-color-light")
         for card in cards:
@@ -33,22 +38,25 @@ def scrape_events():
                 continue
 
             title = title_el.get_text(strip=True)
-            link = title_el["href"]
+            link = title_el.get("href")
             date_str = date_el.get_text(strip=True)
             departure = parse_date(date_str)
 
-            events.append({
+            event = {
                 "title": title,
                 "start": departure,
-                "end": departure + timedelta(hours=1),  # dummy end
-            })
+                "end": departure + timedelta(hours=1),
+            }
+            if link:
+                event["url"] = urljoin(BASE_URL, link)
+            events.append(event)
 
-        # Check for next page
+        # Find next page
         next_link = soup.select_one('a[rel="next"]')
         if next_link and next_link.get("href"):
-            next_url = "https://truckersmp.com" + next_link["href"]
+            current_url = urljoin(BASE_URL, next_link["href"])
         else:
-            next_url = None
+            current_url = None
 
     return events
 
