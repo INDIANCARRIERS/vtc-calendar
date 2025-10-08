@@ -44,19 +44,20 @@ def scrape_events():
 
 def to_ics(events):
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//VTC Calendar//EN"]
-    for ev in events:
-        uid = f"{hash(ev['title']+str(ev['start']))}@vtc"
+    for i, ev in enumerate(events):
+        uid = f"{i}-{ev['start'].strftime('%Y%m%dT%H%M%S')}@vtc-calendar"
         lines.append("BEGIN:VEVENT")
         lines.append(f"UID:{uid}")
-        lines.append(f"DTSTAMP:{ev['start'].strftime('%Y%m%dT%H%M%S')}")
-        lines.append(f"DTSTART:{ev['start'].strftime('%Y%m%dT%H%M%S')}")
-        lines.append(f"DTEND:{ev['end'].strftime('%Y%m%dT%H%M%S')}")
+        lines.append(f"DTSTAMP:{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}")
+        lines.append(f"DTSTART:{ev['start'].strftime('%Y%m%dT%H%M%SZ')}")
+        lines.append(f"DTEND:{ev['end'].strftime('%Y%m%dT%H%M%SZ')}")
         lines.append(f"SUMMARY:{ev['title']}")
         if ev.get("url"):
             lines.append(f"URL:{ev['url']}")
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines)
+
 
 if __name__ == "__main__":
     events = scrape_events()
