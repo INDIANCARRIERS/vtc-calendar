@@ -42,8 +42,15 @@ def scrape_events():
         })
     return events
 
+
 def to_ics(events):
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//VTC Calendar//EN"]
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//VTC Calendar//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH"
+    ]
     for i, ev in enumerate(events):
         uid = f"{i}-{ev['start'].strftime('%Y%m%dT%H%M%S')}@vtc-calendar"
         lines.append("BEGIN:VEVENT")
@@ -57,6 +64,7 @@ def to_ics(events):
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines)
+
 
 
 if __name__ == "__main__":
