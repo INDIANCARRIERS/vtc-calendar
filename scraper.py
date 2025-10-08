@@ -17,31 +17,40 @@ def parse_date(date_str):
     return datetime(year, month, day, hour, minute)
 
 def scrape_events():
-    url = "https://truckersmp.com/vtc/64218/events/attending"
-    html = requests.get(url).text
-    soup = BeautifulSoup(html, "html.parser")
-
+    base_url = "https://truckersmp.com/vtc/64218/events/attending"
+    page = 1
     events = []
-    # Each event card has this wrapper
-    for card in soup.select("div.h-100.bg-color-light"):
-        title_el = card.select_one("h4 a")
-        date_el = card.select_one("p.mb-2 b")
-        if not title_el or not date_el:
-            continue
 
-        title = title_el.get_text(strip=True)
-        link = title_el["href"]
-        date_str = date_el.get_text(strip=True)
-        dt = parse_date(date_str)
+    while True:
+        url = f"{base_url}?page={page}"
+        html = requests.get(url).text
+        soup = BeautifulSoup(html, "html.parser")
 
-        events.append({
-            "title": title,
-            "start": dt,
-            "end": dt + timedelta(hours=3),
-            "url": link
-        })
+        cards = soup.select("div.h-100.bg-color-light")
+        if not cards:
+            break  # no more events
+
+        for card in cards:
+            title_el = card.select_one("h4 a")
+            date_el = card.select_one("p.mb-2 b")
+            if not title_el or not date_el:
+                continue
+
+            title = title_el.get_text(strip=True)
+            link = title_el["href"]
+            date_str = date_el.get_text(strip=True)
+            dt = parse_date(date_str)
+
+            events.append({
+                "title": title,
+                "start": dt,
+                "end": dt + timedelta(hours=3),
+                "url": link
+            })
+
+        page += 1
+
     return events
-
 
 def to_ics(events):
     lines = [
@@ -64,8 +73,6 @@ def to_ics(events):
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines)
-
-
 
 if __name__ == "__main__":
     events = scrape_events()
