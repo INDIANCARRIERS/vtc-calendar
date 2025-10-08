@@ -12,11 +12,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (shallow)
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          # We don't need full depth yet
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -26,23 +26,29 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Sync to latest main and run scraper
+      - name: Fetch latest main and regenerate ICS
         run: |
-          # Ensure we're working from the absolute latest main
+          # Fetch the absolute latest main from remote
           git fetch origin main
+          # Hard reset to it — discard any local state
           git reset --hard origin/main
-          # Now generate the ICS file
+
+          # Now generate the file on top of true latest
           python scraper.py
 
-      - name: Commit and push if changed
+      - name: Commit and push only if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add vtc-events.ics
-          # Only commit if there are staged changes
-          if ! git diff --cached --quiet; then
-            git commit -m "Update ICS"
-            git push origin main
-          else
-            echo "No changes detected. Skipping commit."
+
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
           fi
+
+          git commit -m "Update ICS"
+          git push --force-with-lease=origin/main origin main
+
+          # Try to push — if rejected, we'll fail (but shouldn't happen now)
+          git push origin main
