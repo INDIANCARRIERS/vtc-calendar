@@ -22,16 +22,23 @@ def scrape_events():
     soup = BeautifulSoup(html, "html.parser")
 
     events = []
-    for card in soup.select(".event, .event-card, .col-md-6"):
-        title = card.get_text(strip=True)
-        date_el = card.find("time")
-        if not date_el: continue
+    # Each event card has this wrapper
+    for card in soup.select("div.h-100.bg-color-light"):
+        title_el = card.select_one("h4 a")
+        date_el = card.select_one("p.mb-2 b")
+        if not title_el or not date_el:
+            continue
+
+        title = title_el.get_text(strip=True)
+        link = title_el["href"]
         date_str = date_el.get_text(strip=True)
         dt = parse_date(date_str)
+
         events.append({
             "title": title,
             "start": dt,
-            "end": dt + timedelta(hours=3)
+            "end": dt + timedelta(hours=3),
+            "url": link
         })
     return events
 
@@ -45,12 +52,15 @@ def to_ics(events):
         lines.append(f"DTSTART:{ev['start'].strftime('%Y%m%dT%H%M%S')}")
         lines.append(f"DTEND:{ev['end'].strftime('%Y%m%dT%H%M%S')}")
         lines.append(f"SUMMARY:{ev['title']}")
+        if ev.get("url"):
+            lines.append(f"URL:{ev['url']}")
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines)
 
 if __name__ == "__main__":
     events = scrape_events()
+    print(f"Scraped {len(events)} events")
     ics = to_ics(events)
     with open("vtc-events.ics", "w", encoding="utf-8") as f:
         f.write(ics)
