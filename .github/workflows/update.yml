@@ -2,7 +2,7 @@ name: Update ICS
 
 on:
   schedule:
-    - cron: "0 2 * * *"   # run daily at 2 AM UTC
+    - cron: "0 2 * * *"   # Run daily at 2 AM UTC
   workflow_dispatch:
 
 permissions:
@@ -12,43 +12,45 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo (shallow)
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # We don't need full depth yet
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.11"  # More stable than "3.x" in CI
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Fetch latest main and regenerate ICS
         run: |
-          # Fetch the absolute latest main from remote
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Sync to latest main and run scraper
+        run: |
+          # Ensure we're working from the absolute latest main
           git fetch origin main
-          # Hard reset to it — discard any local state
           git reset --hard origin/main
 
-          # Now generate the file on top of true latest
+          # Run the scraper — will fail if URL construction is broken
           python scraper.py
 
-      - name: Commit and push only if changed
+      - name: Commit and push ICS if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+
+          # Stage the ICS file
           git add vtc-events.ics
 
+          # Skip if no changes
           if git diff --cached --quiet; then
-            echo "No changes."
+            echo "✅ No changes to vtc-events.ics — nothing to commit."
             exit 0
           fi
 
+          # Commit and safely push
           git commit -m "Update ICS"
           git push --force-with-lease=origin/main origin main
-
-          # Try to push — if rejected, we'll fail (but shouldn't happen now)
-          git push origin main
