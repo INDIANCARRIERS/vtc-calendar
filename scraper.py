@@ -18,18 +18,14 @@ def parse_date(date_str):
 
 def scrape_events():
     base_url = "https://truckersmp.com/vtc/64218/events/attending"
-    page = 1
     events = []
+    next_url = base_url
 
-    while True:
-        url = f"{base_url}?page={page}"
-        html = requests.get(url).text
+    while next_url:
+        html = requests.get(next_url).text
         soup = BeautifulSoup(html, "html.parser")
 
         cards = soup.select("div.h-100.bg-color-light")
-        if not cards:
-            break
-
         for card in cards:
             title_el = card.select_one("h4 a")
             date_el = card.select_one("p.mb-2 b")
@@ -41,17 +37,18 @@ def scrape_events():
             date_str = date_el.get_text(strip=True)
             departure = parse_date(date_str)
 
-            # Adjust: meet-up starts 1 hour before departure
-            meetup = departure - timedelta(hours=1)
-
             events.append({
                 "title": title,
-                "start": meetup,
-                "end": departure,
-                "url": link
+                "start": departure,
+                "end": departure + timedelta(hours=1),  # dummy end
             })
 
-        page += 1
+        # Check for next page
+        next_link = soup.select_one('a[rel="next"]')
+        if next_link and next_link.get("href"):
+            next_url = "https://truckersmp.com" + next_link["href"]
+        else:
+            next_url = None
 
     return events
 
