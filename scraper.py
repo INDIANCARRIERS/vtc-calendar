@@ -28,7 +28,7 @@ def scrape_events():
 
         cards = soup.select("div.h-100.bg-color-light")
         if not cards:
-            break  # no more events
+            break
 
         for card in cards:
             title_el = card.select_one("h4 a")
@@ -39,12 +39,15 @@ def scrape_events():
             title = title_el.get_text(strip=True)
             link = title_el["href"]
             date_str = date_el.get_text(strip=True)
-            dt = parse_date(date_str)
+            departure = parse_date(date_str)
+
+            # Adjust: meet-up starts 1 hour before departure
+            meetup = departure - timedelta(hours=1)
 
             events.append({
                 "title": title,
-                "start": dt,
-                "end": dt + timedelta(hours=3),
+                "start": meetup,
+                "end": departure,
                 "url": link
             })
 
