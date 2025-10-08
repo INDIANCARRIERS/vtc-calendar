@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
+import time  # ← for delay
 
 MONTHS = {
     "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
@@ -12,7 +13,7 @@ BASE_URL = "https://truckersmp.com"
 EVENTS_PAGE = "/vtc/64218/events/attending"
 
 def parse_date(date_str):
-    # Example: "Fri, Oct 10, 2025 21:30"
+    # Example: "Fri, Oct 10, 2025 16:00"
     parts = date_str.replace(",", "").split()
     month = MONTHS[parts[1]]
     day = int(parts[2])
@@ -27,7 +28,12 @@ def scrape_events():
     while current_url:
         print(f"Fetching: {current_url}")
         response = requests.get(current_url)
+        if response.status_code == 429:
+            print("⚠️  Rate limited! Waiting 5 seconds before retry...")
+            time.sleep(5)
+            response = requests.get(current_url)  # retry once
         response.raise_for_status()
+
         soup = BeautifulSoup(response.text, "html.parser")
 
         cards = soup.select("div.h-100.bg-color-light")
@@ -40,7 +46,11 @@ def scrape_events():
             title = title_el.get_text(strip=True)
             link = title_el.get("href")
             date_str = date_el.get_text(strip=True)
-            departure = parse_date(date_str)
+            try:
+                departure = parse_date(date_str)
+            except Exception as e:
+                print(f"⚠️  Failed to parse date '{date_str}': {e}")
+                continue
 
             event = {
                 "title": title,
@@ -57,6 +67,10 @@ def scrape_events():
             current_url = urljoin(BASE_URL, next_link["href"])
         else:
             current_url = None
+
+        # ⏸️ Be polite: wait 1.5 seconds between pages
+        if current_url:
+            time.sleep(1.5)
 
     return events
 
@@ -84,7 +98,7 @@ def to_ics(events):
 
 if __name__ == "__main__":
     events = scrape_events()
-    print(f"Scraped {len(events)} events")
+    print(f"✅ Scraped {len(events)} events")
     ics = to_ics(events)
     with open("vtc-events.ics", "w", encoding="utf-8") as f:
         f.write(ics)
