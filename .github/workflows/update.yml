@@ -2,8 +2,11 @@ name: Update ICS
 
 on:
   schedule:
-    - cron: "0 2 * * *"   # run daily at 2 AM UTC
-  workflow_dispatch:      # allow manual run
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
