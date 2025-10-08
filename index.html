@@ -2,18 +2,82 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Events INDIAN CARRIERS Are Attending</title>
+  <title>Indian Carriers – VTC Events Calendar</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <style>
-    body { margin: 40px 10px; padding: 0; font-family: Arial, sans-serif; background: #121212; color: #eee; }
-    #calendar { max-width: 1100px; margin: 0 auto; background: #1e1e1e; border-radius: 8px; padding: 10px; }
-    .fc .fc-event { background: #1976d2; border: none; color: white; padding: 2px 4px; border-radius: 4px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #0d0d0d, #1e1e1e);
+      color: #eee;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    header img.banner {
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .logo-container {
+      text-align: center;
+      margin-top: -60px; /* overlap effect */
+      margin-bottom: 20px;
+    }
+    .logo-container img {
+      width: 120px;
+      height: auto;
+      border-radius: 50%;
+      border: 4px solid #fff;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+      background: #fff;
+    }
+    h2 {
+      text-align: center;
+      margin: 10px 0 5px;
+      color: #ff9800;
+    }
+    p.tagline {
+      text-align: center;
+      color: #ccc;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+    #calendar {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .fc .fc-event {
+      background: #1976d2;
+      border: none;
+      color: white;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center;">🚛Events INDIAN CARRIERS Are Attending</h2>
+  <!-- Banner -->
+  <header>
+    <img src="banner.jpg" alt="Indian Carriers Banner" class="banner">
+  </header>
+
+  <!-- Logo + Title -->
+  <div class="logo-container">
+    <img src="ICVTC.png" alt="Indian Carriers Logo">
+  </div>
+  <h2>🚛 Indian Carriers – VTC Events Calendar</h2>
+  <p class="tagline">We’re Indian Carriers, doing what we do best..</p>
+
+  <!-- Calendar -->
   <div id="calendar"></div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
   <script>
@@ -35,6 +99,7 @@
         return {
           title: e.summary,
           start: e.startDate.toJSDate(),
+          end: e.endDate.toJSDate(),
           url: e.url
         };
       });
@@ -51,8 +116,10 @@
         eventTimeFormat: {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: false
+          hour12: false,
+          meridiem: false
         },
+        displayEventEnd: false, // only show start time
         eventClick: function(info) {
           if (info.event.url) {
             window.open(info.event.url, '_blank');
