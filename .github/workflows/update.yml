@@ -2,27 +2,37 @@ name: Update ICS
 
 on:
   schedule:
-    - cron: "0 2 * * *"
-  workflow_dispatch:
+    - cron: "0 2 * * *"   # run daily at 2 AM UTC
+  workflow_dispatch:      # allow manual trigger
 
 permissions:
-  contents: write
+  contents: write   # allow pushing back to repo
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # fetch full history so we can rebase/push
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
-      - run: pip install -r requirements.txt
-      - run: python scraper.py
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        run: python scraper.py
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add vtc-events.ics
           git commit -m "Update ICS" || echo "No changes"
-          git push
+          git pull --rebase origin main
+          git push origin main
